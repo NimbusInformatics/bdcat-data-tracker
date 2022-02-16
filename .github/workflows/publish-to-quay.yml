@@ -35,6 +35,15 @@ jobs:
           SENDGRID_ADMIN_EMAIL={{ secrets.SENDGRID_ADMIN_EMAIL }}
           EOF
 
+      - name: Create short-sha
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
+
+      - name: Set outputs
+        id: vars
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+      - name: Check outputs
+        run: echo ${{ steps.vars.outputs.sha_short }}
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -55,7 +64,7 @@ jobs:
           images: |
             quay.io/nimbusinformatics/bdcat-data-tracker
           tags: |
-            $GITHUB_SHA::7
+            $GITHUB_ENV
             latest
 
       - name: Build and Push
