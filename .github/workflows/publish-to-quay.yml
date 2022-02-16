@@ -53,4 +53,4 @@ jobs:
         with:
           context: api
           push: true
-          tags: nimbusinformatics/bdcat-data-tracker:latest
+          tags: quay.io/nimbusinformatics/bdcat-data-tracker:latest
