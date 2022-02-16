@@ -3,6 +3,9 @@ name: API - Publish to Quay
 on:
   push:
 
+env:
+  GITHUB_SHA: ${{ github.sha }}
+
 jobs:
   build:
     name: Build and Publish to Quay
@@ -52,7 +55,8 @@ jobs:
           images: |
             quay.io/nimbusinformatics/bdcat-data-tracker
           tags: |
-            ${{ github.sha }}
+            ${GITHUB_SHA::7}
+            latest
 
       - name: Build and Push
         uses: docker/build-push-action@v2
