@@ -51,6 +51,5 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v2
         with:
-          context: .
           push: false
           tags: nimbusinformatics/bdcat-data-tracker:latest
