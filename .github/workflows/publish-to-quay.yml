@@ -1,7 +1,6 @@
 name: API - Publish to Quay
 
-on:
-  push:
+on: workflow_dispatch
 
 jobs:
   build:
@@ -45,9 +44,19 @@ jobs:
           username: ${{ secrets.QUAY_NIMBUS_USERNAME }}
           password: ${{ secrets.QUAY_NIMBUS_PASSWORD }}
 
+      - name: Generate Docker Meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            nimbusinformatics/bdcat-data-tracker
+            quay.io/nimbusinformatics/bdcat-data-tracker
+          tags: |
+            type=sha
+
       - name: Build and Push
         uses: docker/build-push-action@v2
         with:
           context: api
           push: true
-          tags: quay.io/nimbusinformatics/bdcat-data-tracker:${{{ github.sha }}}
+          tags: ${{ steps.meta.outputs.tags }}
