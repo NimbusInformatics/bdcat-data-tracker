@@ -52,4 +52,4 @@ jobs:
         with:
           context: api
           push: true
-          tags: quay.io/nimbusinformatics/bdcat-data-tracker:$GITHUB_SHA
+          tags: quay.io/nimbusinformatics/bdcat-data-tracker:"$GITHUB_SHA"
