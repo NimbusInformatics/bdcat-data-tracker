@@ -50,7 +50,6 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            nimbusinformatics/bdcat-data-tracker
             quay.io/nimbusinformatics/bdcat-data-tracker
           tags: |
             type=sha
