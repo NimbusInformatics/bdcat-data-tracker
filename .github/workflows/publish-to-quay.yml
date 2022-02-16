@@ -53,4 +53,4 @@ jobs:
         with:
           context: .
           push: false
-          tags: nimbusinformatics/bdcat-data-tracker:{{ GITHUB_SHA }}
+          tags: nimbusinformatics/bdcat-data-tracker:$GITHUB_SHA
