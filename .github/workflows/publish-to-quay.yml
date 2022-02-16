@@ -52,7 +52,7 @@ jobs:
           images: |
             quay.io/nimbusinformatics/bdcat-data-tracker
           tags: |
-            type=sha
+            ${{ github.sha }}
 
       - name: Build and Push
         uses: docker/build-push-action@v2
