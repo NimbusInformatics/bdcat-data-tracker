@@ -64,7 +64,7 @@ jobs:
           images: |
             quay.io/nimbusinformatics/bdcat-data-tracker
           tags: |
-            $GITHUB_ENV
+            ${{ env.SHORT_SHA }}
             latest
 
       - name: Build and Push
