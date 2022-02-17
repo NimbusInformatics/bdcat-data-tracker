@@ -38,6 +38,8 @@ jobs:
       - name: Create short-sha
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
+      - name: Setup
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v1
 
