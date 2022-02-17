@@ -64,5 +64,5 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: api
-          push: ${{ github.ref == 'ref/head/master' }}
+          push: ${{ github.ref == 'ref/head/ci/quay' }}
           tags: ${{ steps.meta.outputs.tags }}
