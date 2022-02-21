@@ -227,6 +227,17 @@ class Ticket(models.Model):
             return (self.created_dt, STATUS_TYPES[1], "primary")
 
 
+class Comment(models.Model):
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
+    comment = models.CharField(max_length=1000, verbose_name="Comment")
+
+    created_dt = models.DateTimeField(verbose_name="Created Date", auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    class Meta:
+        ordering = ["created_dt"]
+
+
 class UserManager(BaseUserManager):
     def _create_user(self, email, password, is_staff, is_superuser, **extra_data):
         if not email:
