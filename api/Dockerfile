@@ -22,7 +22,7 @@ RUN set -eux; \
   chmod +x /sbin/tini \
   ; \
   # install py modules
-  pip install --upgrade pip; \
+  pip install -U "pip>=21.1"; \
   pip install -r requirements.txt; \
   # collect static
   python /app/manage.py collectstatic --noinput;
