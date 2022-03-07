@@ -149,6 +149,11 @@ docker run -p 8000:8000 quay.io/nimbusinformatics/bdcat-data-tracker:latest
 
 A more detailed writeup can be found on the [Quay repository](https://quay.io/repository/nimbusinformatics/bdcat-data-tracker?tab=info)
 
+#### Red Hat OpenShift
+
+Red Hat OpenShift can be developed locally, with [Red Hat CodeReady Containers](https://developers.redhat.com/products/codeready-containers/overview).
+You can find a detailed writeup in the [`openshift`](/openshift) directory
+
 #### Microsoft Azure
 
 Azure must be set up manually.
