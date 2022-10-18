@@ -48,6 +48,7 @@ class TicketCreate(LoginRequiredMixin, CreateView):
         ticket_obj = form.save(commit=False)
         ticket_obj.created_by = self.request.user
         ticket_obj.save()
+        # TODO Add jira update code here
         Mail(ticket_obj, "Created").send()
         return super().form_valid(form)
 
@@ -143,6 +144,7 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
                 )
 
         ticket.save()
+        # TODO Add jira update code here
         self.object = ticket
 
         # send email with status update
@@ -157,6 +159,7 @@ class TicketDelete(PermissionRequiredMixin, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         ticket = self.get_object()
+        # TODO Add jira update code here
 
         # send email notification
         Mail(ticket, "Deleted").send()
