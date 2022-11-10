@@ -3,13 +3,13 @@ from types import SimpleNamespace
 import configparser
 
 
-def create_ticket(jira_connection, ticket):
+def create_ticket(jira_connection, ticket, project, issue_type):
 	issue_dict = {
-		'project': {'key': 'MCMP'}, # make configurable
+		'project': {'key': project}, 
 		'summary': _get_ticket_summary(ticket),
 		'description': _get_ticket_synopsis(ticket),
 		'customfield_10011': _get_ticket_summary(ticket),
-		'issuetype': {'name': 'Epic'}, # make configurable 
+		'issuetype': {'name': issue_type} 
 	}
 
 	issue = jira_connection.create_issue(fields=issue_dict)
@@ -59,7 +59,7 @@ def main():
 	jira_connection = JIRA(options, basic_auth=(user, token))
 	ticket = SimpleNamespace(name='Ann Van', email='ann@nimbusinformatics.com', organization='Nimbus Informatics', study_name='Test Study', study_id='phs0009999', consent_code='c1', data_size='1 MB', dataset_description='test description', google_email='ann@nimbusinformatics.com',aws_iam='XXX', is_test_data='No', ticket_review_comment='Approved')
 	print("running tests on jira_ticket.py") 
-	jira_id = create_ticket(jira_connection, ticket)
+	jira_id = create_ticket(jira_connection, ticket, 'MCMP', 'Epic')
 	print("created ticket with id " + jira_id) 
 	result = edit_ticket(jira_connection, jira_id, ticket)
 	result = delete_ticket(jira_connection, jira_id, ticket)
