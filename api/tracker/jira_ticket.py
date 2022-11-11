@@ -129,7 +129,7 @@ def main():
                              dataset_description='test description', google_email='ann@nimbusinformatics.com',
                              aws_iam='XXX', is_test_data='No', ticket_review_comment='Approved')
     print("running tests on jira_ticket.py")
-    jira_id = create_ticket(jira_info, ticket, 'MCMP', 'Epic')
+    jira_id = create_ticket(jira_info, ticket, config['nimbus']['project'], config['nimbus']['issue_type'])
     print("created ticket with id " + jira_id)
     result = edit_ticket(jira_info, jira_id, ticket)
     result = delete_ticket(jira_info, jira_id, ticket)
