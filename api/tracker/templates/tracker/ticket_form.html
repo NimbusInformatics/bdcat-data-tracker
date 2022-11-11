@@ -421,12 +421,15 @@
 
       <h3 class="mb-3 ticket-summary">Tracking Information</h3>
       <div class="row g-3 ticket-summary">
-        <!-- TODO Jira ID -->
         <div class="col-12 card text-center">
           <div class="card-header">
             <strong>Jira Ticket</strong>
           </div>
-          <p>abc123</p>
+          {% if ticket_has_jira_url %}
+            <a href="{{ticket_jira_url}}">{{ticket_jira_url}}</a>
+          {% else %}
+            <p>{{ticket_jira_url}}</p>
+          {% endif %}
         </div>
         <hr class="my-4" />
       </div>

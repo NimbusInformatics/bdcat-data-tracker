@@ -1,18 +1,23 @@
+import logging
+import os
+from datetime import datetime, timezone
+
+from django import forms
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
 )
-from django import forms
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
-from django.views.generic import TemplateView
-from django.views.generic.list import ListView
 from django.forms.utils import ErrorList
 from django.urls import reverse_lazy
+from django.views.generic import TemplateView
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.views.generic.list import ListView
+from django.apps import apps
 
-from datetime import datetime, timezone
-from .models import Ticket, User, STATUS_TYPES
+from .apps import TrackerConfig
+from .jira_ticket import create_ticket
 from .mail import Mail
-import logging
+from .models import Ticket, User, STATUS_TYPES
 
 logger = logging.getLogger("django")
 class IndexView(TemplateView):
@@ -47,9 +52,18 @@ class TicketCreate(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         ticket_obj = form.save(commit=False)
         ticket_obj.created_by = self.request.user
+
+        tracker_config = apps.get_app_config(TrackerConfig.name)
+        ticket_obj.jira_id = create_ticket(
+            tracker_config.jira_server_info,
+            ticket_obj,
+            tracker_config.jira_project,
+            tracker_config.jira_issue_type
+        ) or ""
+
         ticket_obj.save()
-        # TODO Add jira update code here
         Mail(ticket_obj, "Created").send()
+
         return super().form_valid(form)
 
 
@@ -75,6 +89,21 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
         context = super(UpdateView, self).get_context_data(**kwargs)
         context["status"] = self.object.get_ticket_status
         context["staff"] = self.request.user.is_staff
+
+        # Add the jira ticket url to the context.
+        # We don't want the jira id to be modifiable so we don't add that
+        # field above.
+        if self.object.jira_id is not None and len(self.object.jira_id) > 0:
+            tracker_config = apps.get_app_config(TrackerConfig.name)
+            context["ticket_has_jira_url"] = True
+            context["ticket_jira_url"] = "{jira_base_url}/browse/{jira_id}".format(
+                jira_base_url=tracker_config.jira_server_info["server"],
+                jira_id=self.object.jira_id,
+            )
+
+        else:
+            context["ticket_has_jira_url"] = False
+            context["ticket_jira_url"] = "Ticket is not recorded in Jira"
 
         return context
 

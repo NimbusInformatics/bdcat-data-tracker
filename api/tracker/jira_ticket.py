@@ -1,9 +1,9 @@
 import logging
-from jira import JIRA
-from types import SimpleNamespace
-from contextlib import closing, suppress, contextmanager
+from contextlib import closing
 from functools import wraps
+from types import SimpleNamespace
 
+from jira import JIRA
 
 logger = logging.getLogger("django")
 
