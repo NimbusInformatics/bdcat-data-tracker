@@ -238,8 +238,8 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
             messages.error(
                 self.request,
                 (
-                        "Could not update jira ticket, please contact"
-                        + " {dist_email} for help"
+                    "Could not update jira ticket, please contact"
+                    + " {dist_email} for help"
                 ).format(dist_email=os.environ.get("DIST_EMAIL")),
                 extra_tags='ticket_error',
             )
@@ -254,10 +254,26 @@ class TicketDelete(PermissionRequiredMixin, DeleteView):
 
     def form_valid(self, form):
         ticket = self.get_object()
-        # TODO Add jira update code here
 
         # send email notification
         Mail(ticket, "Deleted").send()
+
+        if ticket.jira_id is not None and len(ticket.jira_id) > 0:
+            tracker_config = apps.get_app_config(TrackerConfig.name)
+            if not delete_ticket(
+                    tracker_config.jira_server_info,
+                    ticket.jira_id,
+                    ticket
+            ):
+                messages.error(
+                    self.request,
+                    (
+                            "Could not delete jira ticket, please contact"
+                            + " {dist_email} for help"
+                    ).format(dist_email=os.environ.get("DIST_EMAIL")),
+                    extra_tags='ticket_error',
+                )
+
         return super().form_valid(form)
 
 
