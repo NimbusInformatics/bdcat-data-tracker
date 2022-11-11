@@ -1,7 +1,30 @@
+import logging
 from jira import JIRA
 from types import SimpleNamespace
-from contextlib import closing
+from contextlib import closing, suppress, contextmanager
 from functools import wraps
+
+
+logger = logging.getLogger("django")
+
+
+def _log_suppress_return(log_msg="", return_on_failure=None):
+    # Using factory pattern to parameterize the decorator
+    def __log_suppress_return(func):
+        @wraps(func)
+        def _wrapped(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception:
+                # log exception and suppress by just forgetting it
+                logger.exception(log_msg)
+
+            # return the failure value specified by the function
+            return return_on_failure
+
+        return _wrapped
+
+    return __log_suppress_return
 
 
 def with_jira(jira_func):
@@ -21,6 +44,10 @@ def with_jira(jira_func):
 
 
 @with_jira
+@_log_suppress_return(
+    log_msg="Jira Issue ticket creation failed.",
+    return_on_failure=None
+)
 def create_ticket(jira_connection, ticket, project, issue_type):
     issue_dict = {
         'project': {'key': project},
@@ -35,20 +62,32 @@ def create_ticket(jira_connection, ticket, project, issue_type):
 
 
 @with_jira
+@_log_suppress_return(
+    log_msg="Jira Issue ticket edit failed.",
+    return_on_failure=False
+)
 def edit_ticket(jira_connection, jira_id, ticket):
-    comment = jira_connection.add_comment(jira_id, "Ticket was edited:\n" + _get_ticket_synopsis(ticket))
+    jira_connection.add_comment(jira_id, "Ticket was edited:\n" + _get_ticket_synopsis(ticket))
     return True
 
 
 @with_jira
+@_log_suppress_return(
+    log_msg="Jira Issue ticket status update failed.",
+    return_on_failure=False
+)
 def update_ticket_status(jira_connection, jira_id, ticket):
-    comment = jira_connection.add_comment(jira_id, "Ticket status was updated to: " + ticket.get_ticket_status[1])
+    jira_connection.add_comment(jira_id, "Ticket status was updated to: " + ticket.get_ticket_status[1])
     return True
 
 
 @with_jira
+@_log_suppress_return(
+    log_msg="Jira Issue ticket deletion failed.",
+    return_on_failure=False
+)
 def delete_ticket(jira_connection, jira_id, ticket):
-    comment = jira_connection.add_comment(jira_id, "Ticket was deleted")
+    jira_connection.add_comment(jira_id, "Ticket was deleted")
     return True
 
 
