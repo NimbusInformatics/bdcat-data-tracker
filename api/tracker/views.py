@@ -16,7 +16,12 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic.list import ListView
 
 from .apps import TrackerConfig
-from .jira_ticket import create_ticket
+from .jira_ticket import (
+    create_ticket,
+    edit_ticket,
+    delete_ticket,
+    update_ticket_status,
+)
 from .mail import Mail
 from .models import Ticket, User, STATUS_TYPES
 
@@ -68,7 +73,8 @@ class TicketCreate(LoginRequiredMixin, CreateView):
                 (
                     "Could not create jira ticket, please contact {dist_email}"
                     + " for help"
-                ).format(dist_email=os.environ.get("DIST_EMAIL"))
+                ).format(dist_email=os.environ.get("DIST_EMAIL")),
+                extra_tags='ticket_error',
             )
 
         ticket_obj.save()
@@ -100,12 +106,17 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
         context["status"] = self.object.get_ticket_status
         context["staff"] = self.request.user.is_staff
 
+        # This is for error messages which can't be indicated
+        # using the usual form_invalid mechanism
         context["error_messages"] = []
         if len(messages.get_messages(self.request)) > 0:
             context["error_messages"] = [
                 msg
                 for msg in messages.get_messages(self.request)
-                if msg.level == messages.ERROR
+                if (
+                    msg.level == messages.ERROR
+                    and 'ticket_error' in msg.extra_tags.split()
+                )
             ]
 
         # Add the jira ticket url to the context.
@@ -191,12 +202,47 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
                 )
 
         ticket.save()
-        # TODO Add jira update code here
         self.object = ticket
 
         # send email with status update
         Mail(ticket, ticket.get_ticket_status[1]).send()
+
+        # If there were no errors from above and if we have a jira ticket id
+        # then we need to update the ticket's jira issue.
+        if len(form.errors) == 0 \
+            and ticket.jira_id is not None \
+            and len(ticket.jira_id) > 0:
+            self._update_jira_issue(ticket)
+
         return super().form_valid(form)
+
+    def _update_jira_issue(self, ticket):
+        status_update = self.request.POST.get("status_update")
+        tracker_config = apps.get_app_config(TrackerConfig.name)
+
+        if status_update is None:
+            jira_success = edit_ticket(
+                tracker_config.jira_server_info,
+                ticket.jira_id,
+                ticket
+            )
+
+        else:
+            jira_success = update_ticket_status(
+                tracker_config.jira_server_info,
+                ticket.jira_id,
+                ticket
+            )
+
+        if not jira_success:
+            messages.error(
+                self.request,
+                (
+                        "Could not update jira ticket, please contact"
+                        + " {dist_email} for help"
+                ).format(dist_email=os.environ.get("DIST_EMAIL")),
+                extra_tags='ticket_error',
+            )
 
 
 class TicketDelete(PermissionRequiredMixin, DeleteView):
