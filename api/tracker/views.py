@@ -3,6 +3,8 @@ import os
 from datetime import datetime, timezone
 
 from django import forms
+from django.apps import apps
+from django.contrib import messages
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
@@ -12,7 +14,6 @@ from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic.list import ListView
-from django.apps import apps
 
 from .apps import TrackerConfig
 from .jira_ticket import create_ticket
@@ -61,6 +62,15 @@ class TicketCreate(LoginRequiredMixin, CreateView):
             tracker_config.jira_issue_type
         ) or ""
 
+        if len(ticket_obj.jira_id) == 0:
+            messages.error(
+                self.request,
+                (
+                    "Could not create jira ticket, please contact {dist_email}"
+                    + " for help"
+                ).format(dist_email=os.environ.get("DIST_EMAIL"))
+            )
+
         ticket_obj.save()
         Mail(ticket_obj, "Created").send()
 
@@ -89,6 +99,14 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
         context = super(UpdateView, self).get_context_data(**kwargs)
         context["status"] = self.object.get_ticket_status
         context["staff"] = self.request.user.is_staff
+
+        context["error_messages"] = []
+        if len(messages.get_messages(self.request)) > 0:
+            context["error_messages"] = [
+                msg
+                for msg in messages.get_messages(self.request)
+                if msg.level == messages.ERROR
+            ]
 
         # Add the jira ticket url to the context.
         # We don't want the jira id to be modifiable so we don't add that

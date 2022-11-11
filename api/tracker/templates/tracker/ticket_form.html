@@ -34,6 +34,16 @@
         {% endif %} {% endfor %}
       </ul>
       {% endif %}
+      {% if error_messages %}
+      <h3 class="text-center" aria-live="polite">
+        <div class="badge bg-danger rounded-pill" style="width:100%;">
+          Error
+        </div>
+      </h3>
+      {% for msg in error_messages %}
+      <h3 class="text-center"><strong>{{ msg }}</strong></h3>
+      {% endfor %}
+      {% endif %}
 
       <!-- Badge Logic -->
       {% if object is None %}
