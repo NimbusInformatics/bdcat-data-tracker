@@ -268,10 +268,10 @@ class TicketDelete(PermissionRequiredMixin, DeleteView):
                 messages.error(
                     self.request,
                     (
-                            "Could not delete jira ticket, please contact"
-                            + " {dist_email} for help"
+                        "Could not delete jira ticket, please contact"
+                        + " {dist_email} for help"
                     ).format(dist_email=os.environ.get("DIST_EMAIL")),
-                    extra_tags='ticket_error',
+                    extra_tags='toast-error',
                 )
 
         return super().form_valid(form)
