@@ -13,7 +13,9 @@
       <!-- Handle Errors -->
       {% if form.non_field_errors %}
       <h3 class="text-center" aria-live="polite">
-        <div class="badge bg-danger rounded-pill">Insufficient Permissions</div>
+        <div class="badge bg-danger rounded-pill" style="width:100%;">
+          Error
+        </div>
       </h3>
       {% for error in form.non_field_errors %}
       <h3 class="text-center"><strong>{{ error }}</strong></h3>
@@ -147,10 +149,32 @@
         <input class="btn btn-success btn-md mb-2" type="submit" name="status_update" value="Approve Ticket" />
         <input class="btn btn-danger btn-md" type="submit" name="status_update" value="Reject Ticket" />
         {% endif %} {% if "Awaiting NHLBI Cloud Bucket Creation" in status and staff %}
-        <textarea class="form-control mb-2" id="{{ form.ticket_bucket_name.auto_id }}"
-          name="{{ form.ticket_bucket_name.name }}" placeholder="{{ form.ticket_bucket_name.help_text }}"
-          rows="3">{{ form.ticket_bucket_name.value }}</textarea>
-        <input class="btn btn-success btn-md mb-2" type="submit" name="status_update" value="Mark as Bucket Created" />
+        {% if form.data_bucket_name.value %}
+        <div class="col-12 p-0">
+          <div class="card card-body mb-3 w-100">
+            <p id="create-bucket-info-header">The following buckets are needed for this study:</p>
+              <div class="text-primary">gs://{{ form.data_bucket_name.value }}</div><br/>
+            {% if form.google_email.value %}
+              <div class="text-secondary">{{ form.google_email.value }}</div><br/>
+            {% endif %}
+              <div class="text-primary">s3://{{ form.data_bucket_name.value }}</div><br/>
+            {% if form.aws_iam.value %}
+              <div class="text-secondary">{{ form.aws_iam.value }}</div><br/>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+        <div class="col-12 p-0">
+          <div class="form-check mb-3 w-100">
+            <input class="form-check-input" type="checkbox" value="" id="check-make-bucket">
+            <label class="form-check-label" for="check-make-bucket">
+              Create Bucket Automatically
+            </label>
+          </div>
+        </div>
+        <div class="col-12 p-0">
+          <input id="mark-bucket-button" class="btn btn-success btn-md mb-3 w-100" type="submit" name="status_update" value="Mark as Bucket Created" />
+        </div>
         {% endif %} {% if "Awaiting Data Custodian Upload Start" in status %}
         <input class="btn btn-success btn-md mb-2" type="submit" name="status_update"
           value="Mark as Data Upload Started" />
@@ -290,6 +314,25 @@
           <div class="form-text">{{ form.aws_iam.help_text }}</div>
         </div>
 
+        {% if "Awaiting NHLBI Review" in status or "Awaiting NHLBI Cloud Bucket Creation" in status %}
+        <div class="col-sm-12">
+          <label for="{{ form.data_bucket_name.id_for_label }}" class="form-label">
+            Proposed {{ form.data_bucket_name.label }}
+          </label>
+          <div class="col-sm-3">
+            <input
+              type="text"
+              class="form-control {% if form.data_bucket_name.errors %}is-invalid aria-invalid{% endif %}"
+              id="{{ form.data_bucket_name.auto_id }}"
+              name="{{ form.data_bucket_name.name }}"
+              placeholder="Name of Data Bucket"
+              value="{{ form.data_bucket_name.value }}" {% if form.data_bucket_name.errors %} aria-invalid
+              aria-describedby="{% for error in form.data_bucket_name.errors %}id_data_size_error_{{ forloop.counter }}{% endfor %}"
+              {% endif %} />
+          </div>
+          <div class="form-text">{{ form.data_bucket_name.help_text }}</div>
+        </div>
+        {% endif %}
         <!-- Data Size -->
         <div class="col-sm-12">
           <label for="{{ form.data_size.id_for_label }}" class="form-label"><span
@@ -412,6 +455,18 @@
           <p>{{ form.aws_iam.value }}</p>
         </div>
 
+        <div class="col-sm-12 card text-center">
+          <div class="card-header">
+            <strong>
+              {% if "Awaiting NHLBI Review" in status or "Awaiting NHLBI Cloud Bucket Creation" in status %}
+              Proposed
+              {% endif %}
+              Data Bucket Name
+            </strong>
+          </div>
+          <p>{{ form.data_bucket_name.value }}</p>
+        </div>
+
         <!-- Data Size -->
         <div class="col-sm-12 card text-center">
           <div class="card-header">
@@ -447,6 +502,36 @@
   </div>
 </form>
 
+{% if "Awaiting NHLBI Cloud Bucket Creation" in status and staff %}
+<div class="modal" id="bucket-creation-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Are you sure?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>You are about to create the following cloud resources:</p>
+          <div class="text-primary">gs://{{ form.data_bucket_name.value }}</div>
+          <div class="text-primary">s3://{{ form.data_bucket_name.value }}</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+        <button
+          type="submit"
+          class="btn btn-success"
+          form="ticket-form"
+          value="Create and Mark as Bucket Created"
+          name="status_update"
+        >
+          Create and Mark as Bucket Created
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <script>
   function show_summary() {
     $(".ticket-summary").show();
@@ -465,6 +550,35 @@
 
     $("#ticket-form").submit();
   }
+
+  $(document).ready(function() {
+    {% if "Awaiting NHLBI Cloud Bucket Creation" in status and staff %}
+    // This is to make sure that on reload the checkbox is unchecked.
+    // Without it if you check #check-make-bucket and reload it will
+    // remain checked and leave other elements in an invalid state.
+    $('#check-make-bucket').prop("checked", false);
+
+    $('#check-make-bucket').change(function() {
+      if (this.checked) {
+        $('#create-bucket-info-header').text(
+          'The following buckets will be created and tied to the following accounts if available:'
+        );
+      }
+
+      else {
+        $('#create-bucket-info-header').text('The following buckets are needed for this study:');
+      }
+    });
+
+    $('#mark-bucket-button').click(function(e) {
+        if ($('#check-make-bucket').is(":checked")) {
+            let bucketCreateModal = new bootstrap.Modal(document.getElementById('bucket-creation-modal'));
+            bucketCreateModal.show();
+            e.preventDefault();
+        }
+    });
+    {% endif %}
+  });
 </script>
 
 {% if object and not form.errors %}

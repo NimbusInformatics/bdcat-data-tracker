@@ -16,6 +16,12 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.views.generic.list import ListView
 
 from .apps import TrackerConfig
+from .cloud_storage import (
+    google_cloud_bucket_exists,
+    google_cloud_create_bucket_with_user_permissions,
+    aws_cloud_bucket_exists,
+    aws_cloud_create_bucket_with_user_permissions,
+)
 from .jira_ticket import (
     create_ticket,
     edit_ticket,
@@ -58,6 +64,7 @@ class TicketCreate(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         ticket_obj = form.save(commit=False)
         ticket_obj.created_by = self.request.user
+        ticket_obj.data_bucket_name = ticket_obj.default_data_bucket_name()
 
         tracker_config = apps.get_app_config(TrackerConfig.name)
         ticket_obj.jira_id = create_ticket(
@@ -98,6 +105,7 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
         "study_id",
         "consent_code",
         "ticket_review_comment",
+        "data_bucket_name",
     ]
 
     # add status to context
@@ -159,6 +167,12 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
                 # set status to "Awaiting Data Custodian Upload Start"
                 ticket.bucket_created_dt = datetime.now(timezone.utc)
                 ticket.bucket_created_by = email
+            elif status_update == "Create and Mark as Bucket Created":
+                self._create_buckets(ticket, form)
+                if len(form.errors) == 0:
+                    ticket.bucket_created_dt = datetime.now(timezone.utc)
+                    ticket.bucket_created_by = email
+
             elif status_update == "Mark as Data Upload Started":
                 # set status to "Awaiting Data Custodian Upload Complete"
                 ticket.data_uploaded_started_dt = datetime.now(timezone.utc)
@@ -200,6 +214,9 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
                 form.errors[forms.forms.NON_FIELD_ERRORS] = ErrorList(
                     ["Only Data Custodians are allowed to perform this action"]
                 )
+
+        if len(form.errors) > 0:
+            return super().form_invalid(form)
 
         ticket.save()
         self.object = ticket
@@ -243,6 +260,48 @@ class TicketUpdate(LoginRequiredMixin, UpdateView):
                 ).format(dist_email=os.environ.get("DIST_EMAIL")),
                 extra_tags='ticket_error',
             )
+    def _create_buckets(self, ticket, form):
+        if google_cloud_bucket_exists(ticket.data_bucket_name):
+            form.errors[forms.forms.NON_FIELD_ERRORS] = ErrorList(
+                ["Google cloud bucket already exists"]
+            )
+            return
+
+        elif aws_cloud_bucket_exists(ticket.data_bucket_name):
+            form.errors[forms.forms.NON_FIELD_ERRORS] = ErrorList(
+                ["AWS cloud bucket already exists"]
+            )
+            return
+
+        gcloud_name = google_cloud_create_bucket_with_user_permissions(
+            ticket.data_bucket_name,
+            ticket.google_email if ticket.google_email else None
+        )
+        if gcloud_name is None:
+            form.errors[forms.forms.NON_FIELD_ERRORS] = ErrorList(
+                [
+                    (
+                        "Could not create google cloud bucket."
+                        + " Please contact {dist_email} for assistance."
+                    ).format(dist_email=os.environ.get("DIST_EMAIL"))
+                ]
+            )
+            return
+
+        aws_name = aws_cloud_create_bucket_with_user_permissions(
+            ticket.data_bucket_name,
+            ticket.aws_iam if ticket.aws_iam else None
+        )
+        if aws_name is None:
+            form.errors[forms.forms.NON_FIELD_ERRORS] = ErrorList(
+                [
+                    (
+                        "Google bucket created but AWS bucket creation failed."
+                        + " Please contact {dist_email} for assistance."
+                    ).format(dist_email=os.environ.get("DIST_EMAIL"))
+                ]
+            )
+            return
 
 
 class TicketDelete(PermissionRequiredMixin, DeleteView):
