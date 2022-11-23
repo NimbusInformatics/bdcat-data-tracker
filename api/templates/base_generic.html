@@ -1,4 +1,5 @@
 {% load static %}
+{% load api_extras %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -70,6 +71,37 @@
 
     <main>
       <div id="content">
+        {%comment%}
+        We set the z-index for the toasts to a very large number so that it appears in front of everything else.
+        It's not ideal but it seems that some pages are misusing the bootstrap defined zindex-tooltip and we want
+        toast messages to appear in front of everything else.
+        {%endcomment%}
+        {% if messages %}
+        <div
+          class="toast-container position-absolute start-50 translate-middle-x w-50"
+          style="z-index:9999999; top: 1%;"
+        >
+          {% for msg in messages %}
+          {% if msg|istoastmessage %}
+          <div
+            class="toast w-100 bg-{{msg|toastbgcolor}} text-{{msg|toasttxtcolor}}"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            data-bs-delay="10000"
+          >
+            <div class="toast-header">
+                <strong class="me-auto text-center">Data Submission Tracker</strong>
+              <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+              <p class="text-center">{{msg}}</p>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
         <h1 id="titleHeader" class="display-4">Data Submission Tracker</h1>
         {% block content %}{% endblock %}
       </div>
@@ -116,6 +148,17 @@
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+
+    /* Display Toasts */
+    var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+    var toastList = toastElList.map(function (toastEl) {
+      return new bootstrap.Toast(toastEl)
+    });
+    toastList.map(function (toast) {
+      toast.show()
+      return toast;
+    });
+
   </script>
 </body>
 

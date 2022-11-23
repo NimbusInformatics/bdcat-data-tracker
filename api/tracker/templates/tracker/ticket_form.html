@@ -34,6 +34,16 @@
         {% endif %} {% endfor %}
       </ul>
       {% endif %}
+      {% if error_messages %}
+      <h3 class="text-center" aria-live="polite">
+        <div class="badge bg-danger rounded-pill" style="width:100%;">
+          Error
+        </div>
+      </h3>
+      {% for msg in error_messages %}
+      <h3 class="text-center"><strong>{{ msg }}</strong></h3>
+      {% endfor %}
+      {% endif %}
 
       <!-- Badge Logic -->
       {% if object is None %}
@@ -416,6 +426,21 @@
           <h3> THIS IS TEST DATA </h3>
         </div>
         {% endif %}
+        <hr class="my-4" />
+      </div>
+
+      <h3 class="mb-3 ticket-summary">Tracking Information</h3>
+      <div class="row g-3 ticket-summary">
+        <div class="col-12 card text-center">
+          <div class="card-header">
+            <strong>Jira Ticket</strong>
+          </div>
+          {% if ticket_has_jira_url %}
+            <a href="{{ticket_jira_url}}">{{ticket_jira_url}}</a>
+          {% else %}
+            <p>{{ticket_jira_url}}</p>
+          {% endif %}
+        </div>
         <hr class="my-4" />
       </div>
     </div>
