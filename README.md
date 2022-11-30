@@ -205,3 +205,43 @@ These variables are listed under the `self.dynamic_template_data` dictionary of 
 Some templates have been provided for you, but you must create your own if you want to make edits
 
 > NOTE: You will need to [verify the sender identity in SendGrid]("https://docs.sendgrid.com/for-developers/sending-email/sender-identity") for the `SENDGRID_ADMIN_EMAIL`
+
+#### Bucket Integration
+
+The following files are required in the api directory:
+
+```
+aws_credentials.txt:
+[default]
+region=us-east-1
+aws_access_key_id=[redacted]
+aws_secret_access_key=[redacted]
+```
+
+```
+google_cloud_credentials.json
+```
+
+See how to create the file default_application_credeintials.json file
+here: https://cloud.google.com/docs/authentication/application-default-credentials
+and rename to google_cloud_credentials.json
+
+Additionally, in Dockerfile, update the GCLOUD_PROJECT value.
+
+#### Jira Integration
+
+The following files are required in the api directory:
+
+```
+jira.credentials.ini
+[nimbus]
+user=xxx
+server=xxx
+token=xxx
+project=xxx
+issue_type=Epic
+```
+
+To create a token, see:
+https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/
+
